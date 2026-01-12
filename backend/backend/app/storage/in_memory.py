@@ -1,0 +1,5 @@
+SESSIONS = {}
+CASE_SHEETS = {}
+AUDIO_CHUNKS = {}
+TRANSCRIPTS = {}
+FACTS = {}
