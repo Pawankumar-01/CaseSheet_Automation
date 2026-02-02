@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/clinical_fact.dart';
+import '../models/casesheet.dart';
+import 'casesheet_mapper.dart';
 
 class FactApi {
   static const baseUrl = 'https://unglamourous-josphine-perkingly.ngrok-free.dev';
@@ -30,5 +32,14 @@ class FactApi {
         'duration': fact.duration,
       }),
     );
+  }
+  static Future<CaseSheet> fetchFullCaseSheet(String sessionId) async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/sessions/$sessionId/case-sheet'),
+    );
+
+    final data = jsonDecode(res.body);
+    // This uses your existing CaseSheetMapper.fromBackend
+    return CaseSheetMapper.fromBackend(data);
   }
 }

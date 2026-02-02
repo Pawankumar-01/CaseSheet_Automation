@@ -1,45 +1,44 @@
+import logging
 from app.services.whisper_service import WhisperService
 from app.services.transcript_service import TranscriptService
-from app.services.sentence_service import SentenceService
-from app.services.intent_service import IntentService
-from app.services.fact_service import FactService
-import logging
+from app.services.gemma_service import GemmaService
+from app.services.session_service import SessionService
+from app.services.draft_service import DraftService
+
 
 logger = logging.getLogger(__name__)
 
 class AudioService:
 
     @staticmethod
-    def handle_chunk(session_id: str, chunk: bytes):
-        logger.info(f"[AUDIO] Received chunk for session {session_id}, size={len(chunk)} bytes")
+    async def handle_chunk(session_id: str, section: str, chunk: bytes):
+        logger.info(
+            f"[AUDIO] Session={session_id}, Section={section}, Bytes={len(chunk)}"
+        )
 
+        # Transcribe
         result = WhisperService.transcribe(chunk)
 
-        if "text" in result:
-            logger.info(f"[WHISPER] Transcript: {result['text']}")
-            TranscriptService.append(
-                session_id=session_id,
-                text=result["text"].strip()
-            )
+        if "text" not in result or not result["text"].strip():
+            logger.warning("[WHISPER] Empty transcription")
+            return
 
-        sentences = SentenceService.split(result["text"])
+        transcript_text = result["text"].strip()
+        logger.info(f"[WHISPER] {transcript_text}")
 
-        last_intent = None
+        # Append transcript (optional, global log)
+        TranscriptService.append(session_id,section, transcript_text)
 
-        for sentence in sentences:
-            intent = IntentService.classify(sentence)
+        # 🔹 SECTION-BASED OLLAMA CALL
+        section_output = GemmaService.generate_section(
+            section=section,
+            transcript=transcript_text  # IMPORTANT: section-only transcript
+        )
 
-            if intent == "other" and last_intent:
-                intent = last_intent
+        # 🔹 Persist into draft
+        DraftService.update_section(
+            session_id=session_id,
+            section=section,
+            data=section_output
+        )
 
-            if intent != "other":
-                last_intent = intent
-
-            print(f"[INTENT] {intent.upper()} → {sentence}")
-
-            # NER + FACT CREATION
-            FactService.process_sentence(
-                session_id=session_id,
-                intent=intent,
-                sentence=sentence
-            )

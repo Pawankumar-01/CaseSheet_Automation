@@ -12,25 +12,28 @@ class Routes {
   static const finalize = '/finalize';
 
   static Map<String, WidgetBuilder> get map => {
-    // Start consultation
-    startSession: (_) => const StartSessionPage(),
+        // Start consultation
+        startSession: (_) => const StartSessionPage(),
 
-    // Recording page (requires sessionId)
-    recording: (context) {
-      final sessionId = ModalRoute.of(context)!.settings.arguments as String;
-      return RecordingPage(sessionId: sessionId);
-    },
+        // Recording page (requires sessionId)
+        recording: (context) {
+          final sessionId =
+              ModalRoute.of(context)!.settings.arguments as String;
+          return RecordingPage(sessionId: sessionId);
+        },
 
-    // Fact review page (requires sessionId)
-    factReview: (context) {
-      final sessionId = ModalRoute.of(context)!.settings.arguments as String;
-      return FactReviewPage(sessionId: sessionId);
-    },
+        // Fact review page (requires sessionId)
+        factReview: (context) {
+          final sessionId =
+              ModalRoute.of(context)!.settings.arguments as String;
+          return FactReviewPage(sessionId: sessionId);
+        },
 
-    // Finalize page (requires sessionId)
-    finalize: (context) {
-      final sessionId = ModalRoute.of(context)!.settings.arguments as String;
-      return FinalizePage(sessionId: sessionId);
-    },
-  };
+        // Finalize page (requires sessionId)
+        finalize: (context) {
+          final sessionId =
+              ModalRoute.of(context)!.settings.arguments as String;
+          return FinalizePage(sessionId: sessionId);
+        },
+      };
 }

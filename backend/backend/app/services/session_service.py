@@ -16,6 +16,10 @@ class SessionService:
         return CASE_SHEETS.get(session_id)
 
     @staticmethod
+    def update_case_sheet(session_id: str, draft: dict):
+        CASE_SHEETS[session_id] = draft
+
+    @staticmethod
     def finalize(session_id: str):
         CASE_SHEETS[session_id]["finalized"] = True
         SESSIONS[session_id]["finalized"] = True

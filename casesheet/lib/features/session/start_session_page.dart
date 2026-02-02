@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_client.dart';
+import '../../routes.dart';
 
 class StartSessionPage extends StatelessWidget {
   const StartSessionPage({super.key});
@@ -13,18 +14,36 @@ class StartSessionPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Patient ID'),
+            const Text(
+              'Start a new clinical consultation',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Optional for now — backend already supports nulls
+            const Text('Patient ID (optional)'),
+            const SizedBox(height: 4),
             const TextField(),
+
             const SizedBox(height: 16),
-            const Text('Doctor ID'),
+
+            const Text('Doctor ID (optional)'),
+            const SizedBox(height: 4),
             const TextField(),
+
             const Spacer(),
+
             ElevatedButton(
               onPressed: () async {
                 final sessionId = await ApiClient.startSession();
+
                 Navigator.pushNamed(
                   context,
-                  '/recording',
+                  Routes.recording, // ✅ CORRECT DESTINATION
                   arguments: sessionId,
                 );
               },

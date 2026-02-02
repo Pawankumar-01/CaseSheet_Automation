@@ -1,44 +1,81 @@
-import 'dart:io'; // Required for File()
+import 'dart:io';
 import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 import 'api_client.dart';
-import 'package:path_provider/path_provider.dart'; // Required for path management
 
 class AudioService {
-  // In the latest 'record' package (v5+), use AudioRecorder instead of Record
   final AudioRecorder _recorder = AudioRecorder();
+
   String? _sessionId;
+  String? _section;
+  bool _isRecording = false;
+
+  // --------------------
+  // Session / Section
+  // --------------------
 
   void setSession(String sessionId) {
     _sessionId = sessionId;
   }
 
+  void setSection(String section) {
+    _section = section;
+  }
+
+  // --------------------
+  // Recording Controls
+  // --------------------
+
   Future<void> startRecording() async {
-    // 1. Check permissions
-    if (await _recorder.hasPermission()) {
-      // 2. Get temporary directory to save the wav file
-      final directory = await getTemporaryDirectory();
-      final String path =
-          '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
-
-      // 3. Configure the recording settings
-      const config = RecordConfig(
-        encoder: AudioEncoder.wav,
-        bitRate: 128000,
-        sampleRate: 16000, // Whisper works best at 16k
-        numChannels: 1, // Mono is better for transcription
-      );
-
-      // 4. Start recording to the file path
-      await _recorder.start(config, path: path);
+    if (_isRecording) {
+      print('[AUDIO] Already recording, ignoring start');
+      return;
     }
+
+    if (_sessionId == null || _section == null) {
+      print('[AUDIO][ERROR] Session or Section not set');
+      return;
+    }
+
+    final hasPermission = await _recorder.hasPermission();
+    if (!hasPermission) {
+      print('[AUDIO][ERROR] Microphone permission denied');
+      return;
+    }
+
+    final directory = await getTemporaryDirectory();
+    final path =
+        '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
+
+    const config = RecordConfig(
+      encoder: AudioEncoder.wav,
+      bitRate: 128000,
+      sampleRate: 16000,
+      numChannels: 1,
+    );
+
+    await _recorder.start(config, path: path);
+    _isRecording = true;
+
+    print('[AUDIO] Recording started | section=$_section');
   }
 
   Future<void> stopAndSendChunk() async {
-    // Stop returns the path of the saved file
-    final String? path = await _recorder.stop();
+    if (!_isRecording) {
+      print('[AUDIO] Not recording, ignoring stop');
+      return;
+    }
 
-    if (path == null || _sessionId == null) {
-      print("Recording failed or No Session ID");
+    final path = await _recorder.stop();
+    _isRecording = false;
+
+    if (path == null) {
+      print('[AUDIO][ERROR] Recorder returned null path');
+      return;
+    }
+
+    if (_sessionId == null || _section == null) {
+      print('[AUDIO][ERROR] Session or Section missing on stop');
       return;
     }
 
@@ -46,19 +83,30 @@ class AudioService {
       final file = File(path);
       final bytes = await file.readAsBytes();
 
-      // Send to your Gradio/FastAPI backend
-      await ApiClient.uploadAudioChunk(_sessionId!, bytes);
+      print(
+        '[AUDIO] Uploading audio | session=$_sessionId | section=$_section | bytes=${bytes.length}',
+      );
 
-      // Cleanup: Delete the temp file after sending to save space
+      await ApiClient.uploadAudioChunk(
+        _sessionId!,
+        _section!,
+        bytes,
+      );
+
       if (await file.exists()) {
         await file.delete();
       }
+
+      print('[AUDIO] Upload complete & temp file deleted');
     } catch (e) {
-      print("Error processing audio: $e");
+      print('[AUDIO][ERROR] Failed to process audio: $e');
     }
   }
 
-  // Good practice to add a dispose method
+  // --------------------
+  // Cleanup
+  // --------------------
+
   void dispose() {
     _recorder.dispose();
   }

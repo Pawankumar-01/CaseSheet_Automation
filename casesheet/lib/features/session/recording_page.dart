@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../casesheet/casesheet_view.dart';
-import 'transcript_panel.dart';
+// import '../casesheet/casesheet_view.dart';
+// import 'fact_review_page.dart';
+import '../casesheet/section_based_casesheet.dart';
 import '../../common/mic_button.dart';
 import '../../services/audio_service.dart';
 import '../../routes.dart';
@@ -19,27 +20,6 @@ class RecordingPage extends StatefulWidget {
 }
 
 class _RecordingPageState extends State<RecordingPage> {
-  bool isRecording = false;
-  late final AudioService _audioService;
-
-  @override
-  void initState() {
-    super.initState();
-    _audioService = AudioService();
-    _audioService.setSession(widget.sessionId);
-  }
-
-  Future<void> _toggleRecording() async {
-    if (isRecording) {
-      await _audioService.stopAndSendChunk();
-    } else {
-      await _audioService.startRecording();
-    }
-
-    setState(() {
-      isRecording = !isRecording;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,11 +29,8 @@ class _RecordingPageState extends State<RecordingPage> {
       appBar: AppBar(title: const Text('Consultation')),
       body: Column(
         children: [
-          TranscriptPanel(sessionId: sessionId),
-          Expanded(child: CaseSheetView(sessionId: sessionId)),
-          MicButton(
-            isRecording: isRecording,
-            onToggle: _toggleRecording,
+          Expanded(
+            child: SectionBasedCaseSheet(sessionId: sessionId),
           ),
         ],
       ),
